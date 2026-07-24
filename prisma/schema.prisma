@@ -1,0 +1,216 @@
+// Prisma Schema — PawShop Database
+// See SCHEMA.md for plain-English documentation of every model and field.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Category {
+  FOOD
+  ACCESSORIES
+  TOYS
+  GROOMING
+  HEALTH
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id String @id @default(cuid())
+
+  email    String @unique // Indexed for fast login lookup
+  name     String?
+
+  // SECURITY: Password stored as bcrypt hash only — never plain text
+  passwordHash String
+
+  role             Role    @default(USER)
+  isEmailVerified  Boolean @default(false)
+
+  // One-time token for email verification (cleared after use)
+  emailVerificationToken String?
+
+  // One-time token for password reset
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+
+  // SECURITY: Refresh token stored as bcrypt hash — raw token lives only in httpOnly cookie
+  refreshTokenHash String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  cart    Cart?
+  orders  Order[]
+  reviews Review[]
+
+  @@map("users")
+}
+
+// ─── Product ──────────────────────────────────────────────────────────────────
+
+model Product {
+  id   String @id @default(cuid())
+
+  name        String
+  slug        String   @unique // URL-friendly ID, indexed for product page lookups
+  description String   @db.Text
+  price       Int      // In paise (₹1 = 100 paise) — avoids float rounding errors
+  compareAtPrice Int?  // Original price (for "was X, now Y" display)
+
+  images   String[] // Array of image paths relative to /uploads
+  category Category // Indexed for category filter queries
+  brand    String?
+  tags     String[]
+
+  stockQty Int     @default(0) // 0 = out of stock; enforced ≥ 0 in service
+  isActive Boolean @default(true) // Soft delete — never hard-delete (preserves order history)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  reviews    Review[]
+
+  @@index([category])
+  @@index([isActive])
+  @@index([brand])
+  @@map("products")
+}
+
+// ─── Cart ─────────────────────────────────────────────────────────────────────
+
+model Cart {
+  id     String @id @default(cuid())
+  userId String @unique // One cart per user
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id       String @id @default(cuid())
+  cartId   String
+  productId String
+  quantity Int    // Enforced ≥ 1 in service layer
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  // A product can only appear once per cart — adding again increases quantity
+  @@unique([cartId, productId])
+  @@map("cart_items")
+}
+
+// ─── Order ────────────────────────────────────────────────────────────────────
+
+model Order {
+  id     String @id @default(cuid())
+  userId String // Indexed for "my orders" queries
+
+  status OrderStatus @default(PENDING)
+
+  // SECURITY: Server-calculated total in paise — never trusted from frontend
+  totalAmount Int
+
+  // Razorpay identifiers (set as payment progresses)
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String? @unique
+
+  // Shipping address snapshot at time of purchase
+  shippingName     String
+  shippingAddress  String
+  shippingCity     String
+  shippingState    String
+  shippingPincode  String
+  shippingPhone    String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user  User        @relation(fields: [userId], references: [id])
+  items OrderItem[]
+
+  @@index([userId])
+  @@index([razorpayOrderId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+
+  productId String
+
+  // Price+name snapshot at time of purchase — not affected by future product edits
+  productName  String
+  productImage String?
+  quantity     Int
+  unitPrice    Int // In paise at time of purchase
+
+  // Relations
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// ─── Review ───────────────────────────────────────────────────────────────────
+
+model Review {
+  id        String @id @default(cuid())
+  userId    String
+  productId String
+
+  rating Int    // 1–5, validated in service
+  title  String?
+  // SECURITY: body is sanitized with DOMPurify before storage to prevent stored XSS
+  body   String @db.Text
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // One review per user per product
+  @@unique([userId, productId])
+  @@index([productId])
+  @@map("reviews")
+}
