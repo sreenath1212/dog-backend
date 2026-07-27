@@ -13,3 +13,25 @@ yarn-error.log*
 .env.production.local
 .DS_Store
 Thumbs.db
+# Auto-generated ignores for clean push
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+env/
+ai/
+*.log
+*.sqlite3
+*.db
+*.lib
+*.dll
+*.exe
+*.onnx
+*.pt
+*.pth
+*.bin
+*.safetensors
+.vscode/
+.idea/
