@@ -1,36 +1,27 @@
-# dog-backend
+# 🐕 Surveillance Robotic Dog Control System
 
-## Overview
-**dog-backend** is a software application codebase.
+[![Platform](https://img.shields.io/badge/Platform-Robotics%20%26%20Surveillance-blue.svg)]()
+[![Stack](https://img.shields.io/badge/Stack-Node.js%20%7C%20React%20%7C%20WebSockets-orange.svg)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Directory Structure
-```
-.env
-.gitignore
-package-lock.json
-package.json
-README.md
-tsconfig.json
-prisma\schema.prisma
-prisma\seed.ts
-prisma\migrations\migration_lock.toml
-prisma\migrations\20260710163749_init\migration.sql
-src\app.ts
-src\server.ts
-src\admin\admin.controller.ts
-src\admin\admin.router.ts
-src\admin\README.md
-src\auth\auth.controller.ts
-src\auth\auth.router.ts
-src\auth\auth.service.ts
-src\auth\auth.validators.ts
-src\auth\README.md
-```
+## 📌 Overview
+The **Surveillance Robotic Dog System** provides remote telemetry, video feed streaming, and motion command controls for a quadruple robotic surveillance platform.
 
-## Setup & Running
-1. Clone the repository: `git clone https://github.com/sreenath1212/dog-backend.git`
-2. Install necessary dependencies based on configuration files.
-3. Run the entrypoint script.
+## ✨ Key Features
+- 📹 **Live Video Streaming**: Real-time camera feed transmission from the robotic dog.
+- 🎮 **Remote Control Dashboard**: Interactive joystick and directional control interface.
+- 📡 **Telemetry Monitoring**: Sensor metrics dashboard (battery status, obstacle proximity, orientation).
+- ⚡ **WebSocket Communication**: Low-latency bidirectional control signals between web UI and robotics controller.
 
----
-*Maintained automatically.*
+## 🛠️ Tech Stack
+- **Frontend**: React.js, WebSockets, HTML5 Canvas
+- **Backend**: Node.js, Express, Socket.io
+- **Hardware Integration**: Serial / MQTT / HTTP APIs
+
+## 🚀 Quick Start
+1. Start backend service: `cd backend && npm install && npm start`
+2. Start frontend UI: `cd frontend && npm install && npm start`
+3. Connect robotics hardware stream to backend socket.
+
+## 📄 License
+MIT License.
